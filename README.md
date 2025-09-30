@@ -1,46 +1,74 @@
 # Library Management System
 
-A modern, cross-platform Library Management System built with ASP.NET Core (.NET 8). This project provides RESTful APIs for managing books, authors, members, and loans in a library context.
+A modern, scalable Library Management System built with C# 12 and .NET 8. This application provides robust features for managing books, members, and loan transactions in a library environment.
 
 ## Features
 
-- Manage books, authors, members, and loans
-- CRUD operations for all entities
-- Validation using FluentValidation
-- Entity Framework Core for data access
-- AutoMapper for DTO mapping
-- Swagger/OpenAPI documentation
-- Database seeding and migration support
+- **Book Management**: Add, update, delete, and view books.
+- **Member Management**: Register, update, delete, and view library members.
+- **Loan Management**: Issue and return books, track loan status, and manage due dates.
+- **Repository & Unit of Work Pattern**: Clean separation of concerns for data access.
+- **DTOs & AutoMapper**: Efficient data transfer and mapping between entities and view models.
+- **RESTful API**: Easily integrate with front-end or other services.
 
 ## Technologies Used
 
-- .NET 8 (ASP.NET Core Web API)
-- Entity Framework Core
-- AutoMapper
-- FluentValidation
-- Swagger (Swashbuckle)
-- SQL Server (default, configurable)
+- **C# 12**
+- **.NET 8**
+- **ASP.NET Core**
+- **Entity Framework Core**
+- **AutoMapper**
 
-# Getting Started
+## Getting Started
 
 ### Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- SQL Server (or update connection string for your DB)
-- Visual Studio 2022 or VS Code
+- [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
+- SQL Server or SQLite (configurable in `appsettings.json`)
 
-### Setup Instructions
+### Installation
 
-1. **Clone the repository**
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/kavisonsugumaran/library-management-system.git
+   ```
+
+2. **Navigate to the project directory:**
+   ```sh
+   cd library-management-system
+   ```
    
-2. **Configure the database**
-- Update the connection string in `appsettings.json` if needed.
+3. **Restore dependencies:**
+   ```sh
+   dotnet restore
+   ```
 
-3. **Apply migrations and seed data**
-- Open a terminal in the project root and run:
-  ```sh
-  dotnet ef database update
-  ```
-- The application will also apply migrations and seed data on startup.
+4. **Update database (if using EF Core migrations):**
+   ```sh
+   dotnet ef database update
+   ```
 
-4. **Run the application**
+5. **Run the application:**
+
+
+## Usage
+
+- Access the API endpoints via Swagger UI or Postman.
+- Example endpoints:
+- `GET /api/books` - List all books
+- `POST /api/loans` - Create a new loan
+- `PUT /api/loans/{id}/return` - Return a book
+
+## Project Structure
+
+- `Library.Application` - Application logic, services, DTOs
+- `Library.Domain` - Domain entities and enums
+- `Library.Infrastructure` - Data access, repositories
+- `Library Management System` - API controllers and startup
+
+## Contact
+
+For questions or support, open an issue or contact [Kavison Sugumaran](https://github.com/kavisonsugumaran).
+
+   
