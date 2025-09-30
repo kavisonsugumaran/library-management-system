@@ -7,45 +7,41 @@ namespace Library_Management_System.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthorsController : ControllerBase
+    public class AuthorsController(
+        AuthorService authorService,
+        IValidator<AuthorCreateDto> authorCreateValidator,
+        IValidator<AuthorUpdateDto> authorUpdateValidator) : ControllerBase
     {
-        private readonly AuthorService _service;
-        private readonly IValidator<AuthorCreateDto> _createValidator;
-        private readonly IValidator<AuthorUpdateDto> _updateValidator;
-
-        public AuthorsController(AuthorService service, IValidator<AuthorCreateDto> createValidator, IValidator<AuthorUpdateDto> updateValidator)
-        {
-            _service = service;
-            _createValidator = createValidator;
-            _updateValidator = updateValidator;
-        }
+        private readonly AuthorService _authorService = authorService;
+        private readonly IValidator<AuthorCreateDto> _authorCreateValidator = authorCreateValidator;
+        private readonly IValidator<AuthorUpdateDto> _authorUpdateValidator = authorUpdateValidator;
 
         [HttpGet]
-        public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
+        public async Task<IActionResult> GetAll() => Ok(await _authorService.GetAllAsync());
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
-            => (await _service.GetAsync(id)) is { } dto ? Ok(dto) : NotFound();
+            => (await _authorService.GetAsync(id)) is { } authorReadDto ? Ok(authorReadDto) : NotFound();
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] AuthorCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] AuthorCreateDto authorCreateDto)
         {
-            var v = await _createValidator.ValidateAsync(dto);
-            if (!v.IsValid) return BadRequest(v.Errors);
-            var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            var validationResult = await _authorCreateValidator.ValidateAsync(authorCreateDto);
+            if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
+            var createdAuthor = await _authorService.CreateAsync(authorCreateDto);
+            return CreatedAtAction(nameof(Get), new { id = createdAuthor.Id }, createdAuthor);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] AuthorUpdateDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] AuthorUpdateDto authorUpdateDto)
         {
-            var v = await _updateValidator.ValidateAsync(dto);
-            if (!v.IsValid) return BadRequest(v.Errors);
-            return await _service.UpdateAsync(id, dto) ? NoContent() : NotFound();
+            var validationResult = await _authorUpdateValidator.ValidateAsync(authorUpdateDto);
+            if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
+            return await _authorService.UpdateAsync(id, authorUpdateDto) ? NoContent() : NotFound();
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
-            => await _service.DeleteAsync(id) ? NoContent() : NotFound();
+            => await _authorService.DeleteAsync(id) ? NoContent() : NotFound();
     }
 }

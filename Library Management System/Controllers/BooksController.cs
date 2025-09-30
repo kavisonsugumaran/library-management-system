@@ -7,46 +7,42 @@ namespace Library_Management_System.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class BooksController : ControllerBase
+    public class BooksController(
+        BookService bookService,
+        IValidator<BookCreateDto> bookCreateValidator,
+        IValidator<BookUpdateDto> bookUpdateValidator) : ControllerBase
     {
-        private readonly BookService _service;
-        private readonly IValidator<BookCreateDto> _createValidator;
-        private readonly IValidator<BookUpdateDto> _updateValidator;
-
-        public BooksController(BookService service, IValidator<BookCreateDto> createValidator, IValidator<BookUpdateDto> updateValidator)
-        {
-            _service = service;
-            _createValidator = createValidator;
-            _updateValidator = updateValidator;
-        }
+        private readonly BookService _bookService = bookService;
+        private readonly IValidator<BookCreateDto> _bookCreateValidator = bookCreateValidator;
+        private readonly IValidator<BookUpdateDto> _bookUpdateValidator = bookUpdateValidator;
 
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? search = null)
-            => Ok(await _service.GetAllAsync(search));
+            => Ok(await _bookService.GetAllAsync(search));
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
-            => (await _service.GetAsync(id)) is { } dto ? Ok(dto) : NotFound();
+            => (await _bookService.GetAsync(id)) is { } bookReadDto ? Ok(bookReadDto) : NotFound();
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] BookCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] BookCreateDto bookCreateDto)
         {
-            var v = await _createValidator.ValidateAsync(dto);
-            if (!v.IsValid) return BadRequest(v.Errors);
-            var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            var validationResult = await _bookCreateValidator.ValidateAsync(bookCreateDto);
+            if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
+            var createdBook = await _bookService.CreateAsync(bookCreateDto);
+            return CreatedAtAction(nameof(Get), new { id = createdBook.Id }, createdBook);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] BookUpdateDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] BookUpdateDto bookUpdateDto)
         {
-            var v = await _updateValidator.ValidateAsync(dto);
-            if (!v.IsValid) return BadRequest(v.Errors);
-            return await _service.UpdateAsync(id, dto) ? NoContent() : NotFound();
+            var validationResult = await _bookUpdateValidator.ValidateAsync(bookUpdateDto);
+            if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
+            return await _bookService.UpdateAsync(id, bookUpdateDto) ? NoContent() : NotFound();
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
-            => await _service.DeleteAsync(id) ? NoContent() : NotFound();
+            => await _bookService.DeleteAsync(id) ? NoContent() : NotFound();
     }
 }

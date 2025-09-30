@@ -14,15 +14,6 @@ namespace Library.Application.Mapping
 
             CreateMap<Book, BookReadDto>()
                 .ForMember(d => d.AuthorName, m => m.MapFrom(s => s.Author!.FirstName + " " + s.Author!.LastName));
-            //CreateMap<Book, BookReadDto>()
-            //    .ForCtorParam("Id", opt => opt.MapFrom(src => src.Id))
-            //    .ForCtorParam("Title", opt => opt.MapFrom(src => src.Title))
-            //    .ForCtorParam("Isbn", opt => opt.MapFrom(src => src.Isbn))
-            //    .ForCtorParam("PublishedOn", opt => opt.MapFrom(src => src.PublishedOn))
-            //    .ForCtorParam("AuthorId", opt => opt.MapFrom(src => src.AuthorId))
-            //    .ForCtorParam("AuthorName", opt => opt.MapFrom(src => src.Author!.FirstName + " " + src.Author!.LastName))
-            //    .ForCtorParam("TotalCopies", opt => opt.MapFrom(src => src.TotalCopies))
-            //    .ForCtorParam("AvailableCopies", opt => opt.MapFrom(src => src.AvailableCopies));
             CreateMap<BookCreateDto, Book>()
                 .ForMember(d => d.AvailableCopies, m => m.MapFrom(s => s.TotalCopies));
             CreateMap<BookUpdateDto, Book>();

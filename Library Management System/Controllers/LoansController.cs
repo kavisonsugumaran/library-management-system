@@ -7,45 +7,42 @@ namespace Library_Management_System.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class LoansController : ControllerBase
+    public class LoansController(
+        LoanService loanService,
+        IValidator<LoanCreateDto> loanCreateValidator,
+        IValidator<LoanReturnDto> loanReturnValidator) : ControllerBase
     {
-        private readonly LoanService _service;
-        private readonly IValidator<LoanCreateDto> _createValidator;
-        private readonly IValidator<LoanReturnDto> _returnValidator;
-
-        public LoansController(LoanService service, IValidator<LoanCreateDto> createValidator, IValidator<LoanReturnDto> returnValidator)
-        {
-            _service = service;
-            _createValidator = createValidator;
-            _returnValidator = returnValidator;
-        }
+        private readonly LoanService _loanService = loanService;
+        private readonly IValidator<LoanCreateDto> _loanCreateValidator = loanCreateValidator;
+        private readonly IValidator<LoanReturnDto> _loanReturnValidator = loanReturnValidator;
 
         [HttpGet]
-        public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
+        public async Task<IActionResult> GetAll() => Ok(await _loanService.GetAllAsync());
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
-            => (await _service.GetAsync(id)) is { } dto ? Ok(dto) : NotFound();
+            => (await _loanService.GetAsync(id)) is { } loanReadDto ? Ok(loanReadDto) : NotFound();
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] LoanCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] LoanCreateDto loanCreateDto)
         {
-            var v = await _createValidator.ValidateAsync(dto);
-            if (!v.IsValid) return BadRequest(v.Errors);
-            var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            var validationResult = await _loanCreateValidator.ValidateAsync(loanCreateDto);
+            if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
+            var createdLoan = await _loanService.CreateAsync(loanCreateDto);
+            return CreatedAtAction(nameof(Get), new { id = createdLoan.Id }, createdLoan);
         }
 
-        [HttpPost("{id:int}/return")]
-        public async Task<IActionResult> Return(int id, [FromBody] LoanReturnDto dto)
+        [HttpPut("{id:int}/return")]
+        public async Task<IActionResult> Return(int id, [FromBody] LoanReturnDto loanReturnDto)
         {
-            var v = await _returnValidator.ValidateAsync(dto);
-            if (!v.IsValid) return BadRequest(v.Errors);
-            return await _service.ReturnAsync(id, dto) ? NoContent() : NotFound();
+            var validationResult = await _loanReturnValidator.ValidateAsync(loanReturnDto);
+            if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
+            return await _loanService.ReturnAsync(id, loanReturnDto) ? NoContent() : NotFound();
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
-            => await _service.DeleteAsync(id) ? NoContent() : NotFound();
+            => await _loanService.DeleteAsync(id) ? NoContent() : NotFound();
+
     }
 }

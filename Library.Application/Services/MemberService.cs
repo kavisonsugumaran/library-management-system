@@ -5,55 +5,52 @@ using Library.Domain.Entities;
 
 namespace Library.Application.Services
 {
-    public class MemberService
+    public class MemberService(IUnitOfWork unitOfWork, IMapper mapper)
     {
-        private readonly IUnitOfWork _uow;
-        private readonly IMapper _mapper;
-
-        public MemberService(IUnitOfWork uow, IMapper mapper)
-        {
-            _uow = uow;
-            _mapper = mapper;
-        }
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IMapper _mapper = mapper;
 
         public async Task<IEnumerable<MemberReadDto>> GetAllAsync()
         {
-            var list = await _uow.Repository<Member>().GetAllAsync(orderBy: q => q.OrderBy(m => m.FullName));
-            return _mapper.Map<IEnumerable<MemberReadDto>>(list);
+            var memberRepository = _unitOfWork.Repository<Member>();
+            var members = await memberRepository.GetAllAsync();
+            return _mapper.Map<IEnumerable<MemberReadDto>>(members);
         }
 
         public async Task<MemberReadDto?> GetAsync(int id)
         {
-            var entity = await _uow.Repository<Member>().GetByIdAsync(id);
-            return entity is null ? null : _mapper.Map<MemberReadDto>(entity);
+            var memberRepository = _unitOfWork.Repository<Member>();
+            var member = await memberRepository.GetByIdAsync(id);
+            return member is null ? null : _mapper.Map<MemberReadDto>(member);
         }
 
-        public async Task<MemberReadDto> CreateAsync(MemberCreateDto dto)
+        public async Task<MemberReadDto> CreateAsync(MemberCreateDto memberCreateDto)
         {
-            var entity = _mapper.Map<Member>(dto);
-            await _uow.Repository<Member>().AddAsync(entity);
-            await _uow.SaveChangesAsync();
-            return _mapper.Map<MemberReadDto>(entity);
+            var member = _mapper.Map<Member>(memberCreateDto);
+            var memberRepository = _unitOfWork.Repository<Member>();
+            await memberRepository.AddAsync(member);
+            await _unitOfWork.SaveChangesAsync();
+            return _mapper.Map<MemberReadDto>(member);
         }
 
-        public async Task<bool> UpdateAsync(int id, MemberUpdateDto dto)
+        public async Task<bool> UpdateAsync(int id, MemberUpdateDto memberUpdateDto)
         {
-            var repo = _uow.Repository<Member>();
-            var entity = await repo.GetByIdAsync(id);
-            if (entity is null) return false;
-            _mapper.Map(dto, entity);
-            repo.Update(entity);
-            await _uow.SaveChangesAsync();
+            var memberRepository = _unitOfWork.Repository<Member>();
+            var member = await memberRepository.GetByIdAsync(id);
+            if (member is null) return false;
+            _mapper.Map(memberUpdateDto, member);
+            memberRepository.Update(member);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var repo = _uow.Repository<Member>();
-            var entity = await repo.GetByIdAsync(id);
-            if (entity is null) return false;
-            repo.Remove(entity);
-            await _uow.SaveChangesAsync();
+            var memberRepository = _unitOfWork.Repository<Member>();
+            var member = await memberRepository.GetByIdAsync(id);
+            if (member is null) return false;
+            memberRepository.Remove(member);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
     }

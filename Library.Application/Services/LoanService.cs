@@ -8,90 +8,92 @@ namespace Library.Application.Services
 {
     public class LoanService
     {
-        private readonly IUnitOfWork _uow;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public LoanService(IUnitOfWork uow, IMapper mapper)
+        public LoanService(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            _uow = uow;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<LoanReadDto>> GetAllAsync()
         {
-            var list = await _uow.Repository<Loan>().GetAllAsync(includes: [l => l.Book!, l => l.Member!]);
-            return _mapper.Map<IEnumerable<LoanReadDto>>(list);
+            var loanRepository = _unitOfWork.Repository<Loan>();
+            var loanEntities = await loanRepository.GetAllAsync(includes: [l => l.Book, l => l.Member]);
+            return _mapper.Map<IEnumerable<LoanReadDto>>(loanEntities);
         }
 
         public async Task<LoanReadDto?> GetAsync(int id)
         {
-            var entity = await _uow.Repository<Loan>().GetByIdAsync(id, l => l.Book!, l => l.Member!);
-            return entity is null ? null : _mapper.Map<LoanReadDto>(entity);
+            var loanRepository = _unitOfWork.Repository<Loan>();
+            var loanEntity = await loanRepository.GetByIdAsync(id, l => l.Book, l => l.Member);
+            return loanEntity is null ? null : _mapper.Map<LoanReadDto>(loanEntity);
         }
 
-        public async Task<LoanReadDto> CreateAsync(LoanCreateDto dto)
+        public async Task<LoanReadDto> CreateAsync(LoanCreateDto loanCreateDto)
         {
-            var bookRepo = _uow.Repository<Book>();
-            var memberRepo = _uow.Repository<Member>();
-            var loanRepo = _uow.Repository<Loan>();
+            var bookRepository = _unitOfWork.Repository<Book>();
+            var memberRepository = _unitOfWork.Repository<Member>();
+            var loanRepository = _unitOfWork.Repository<Loan>();
 
-            var book = await bookRepo.GetByIdAsync(dto.BookId);
-            if (book is null) throw new InvalidOperationException("Book not found.");
-            if (book.AvailableCopies <= 0) throw new InvalidOperationException("No copies available.");
+            var bookEntity = await bookRepository.GetByIdAsync(loanCreateDto.BookId);
+            if (bookEntity is null) throw new InvalidOperationException("Book not found.");
+            if (bookEntity.AvailableCopies <= 0) throw new InvalidOperationException("No copies available.");
 
-            if (!await memberRepo.AnyAsync(m => m.Id == dto.MemberId))
+            if (!await memberRepository.AnyAsync(m => m.Id == loanCreateDto.MemberId))
                 throw new InvalidOperationException("Member not found.");
 
-            book.AvailableCopies -= 1;
-            bookRepo.Update(book);
+            bookEntity.AvailableCopies -= 1;
+            bookRepository.Update(bookEntity);
 
-            var loan = new Loan
+            var loanEntity = new Loan
             {
-                BookId = book.Id,
-                MemberId = dto.MemberId,
-                DueDate = dto.DueDate ?? DateTime.UtcNow.AddDays(14),
+                BookId = bookEntity.Id,
+                MemberId = loanCreateDto.MemberId,
+                DueDate = loanCreateDto.DueDate ?? DateTime.UtcNow.AddDays(14),
                 Status = LoanStatus.Active
             };
 
-            await loanRepo.AddAsync(loan);
-            await _uow.SaveChangesAsync();
+            await loanRepository.AddAsync(loanEntity);
+            await _unitOfWork.SaveChangesAsync();
 
-            var created = await loanRepo.GetByIdAsync(loan.Id, l => l.Book!, l => l.Member!);
-            return _mapper.Map<LoanReadDto>(created);
+            var createdLoanEntity = await loanRepository.GetByIdAsync(loanEntity.Id, l => l.Book, l => l.Member);
+            return _mapper.Map<LoanReadDto>(createdLoanEntity);
         }
 
-        public async Task<bool> ReturnAsync(int id, LoanReturnDto dto)
+        public async Task<bool> ReturnAsync(int id, LoanReturnDto loanReturnDto)
         {
-            var loanRepo = _uow.Repository<Loan>();
-            var bookRepo = _uow.Repository<Book>();
+            var loanRepository = _unitOfWork.Repository<Loan>();
+            var bookRepository = _unitOfWork.Repository<Book>();
 
-            var loan = await loanRepo.GetByIdAsync(id);
-            if (loan is null) return false;
-            if (loan.Status == LoanStatus.Returned) return true;
+            var loanEntity = await loanRepository.GetByIdAsync(id);
+            if (loanEntity is null) return false;
+            if (loanEntity.Status == LoanStatus.Returned) return true;
 
-            loan.Status = LoanStatus.Returned;
-            loan.ReturnDate = dto.ReturnDate;
+            loanEntity.Status = LoanStatus.Returned;
+            loanEntity.ReturnDate = loanReturnDto.ReturnDate;
 
-            var book = await bookRepo.GetByIdAsync(loan.BookId);
-            if (book != null)
+            var bookEntity = await bookRepository.GetByIdAsync(loanEntity.BookId);
+            if (bookEntity != null)
             {
-                book.AvailableCopies += 1;
-                if (book.AvailableCopies > book.TotalCopies) book.AvailableCopies = book.TotalCopies;
-                bookRepo.Update(book);
+                bookEntity.AvailableCopies += 1;
+                if (bookEntity.AvailableCopies > bookEntity.TotalCopies) bookEntity.AvailableCopies = bookEntity.TotalCopies;
+                bookRepository.Update(bookEntity);
             }
 
-            loanRepo.Update(loan);
-            await _uow.SaveChangesAsync();
+            loanRepository.Update(loanEntity);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var repo = _uow.Repository<Loan>();
-            var entity = await repo.GetByIdAsync(id);
-            if (entity is null) return false;
-            repo.Remove(entity);
-            await _uow.SaveChangesAsync();
+            var loanRepository = _unitOfWork.Repository<Loan>();
+            var loanEntity = await loanRepository.GetByIdAsync(id);
+            if (loanEntity is null) return false;
+            loanRepository.Remove(loanEntity);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
     }
